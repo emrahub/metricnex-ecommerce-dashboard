@@ -165,7 +165,7 @@ DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
 
 # Google Analytics
 GOOGLE_CREDENTIALS_BASE64=<base64-encoded-service-account-json>
-GOOGLE_ANALYTICS_PROPERTY_ID=349428903
+GOOGLE_ANALYTICS_PROPERTY_ID=your_property_id_here
 
 # JWT
 JWT_SECRET=your-secret-key
@@ -183,9 +183,9 @@ JWT_EXPIRES_IN=7d
 
 ## 📊 Performans & Özellikler
 
-### **Gerçek Veriler (Elle Shoes)**
+### **Örnek Performans Verileri**
 - 📈 **Günlük Oturum:** ~26,000
-- 🌍 **Ana Pazar:** Türkiye (%95+)
+- 🌍 **Coğrafi Dağılım:** Çoklu pazar desteği
 - 📱 **Mobil Kullanım:** Yüksek oran
 - 💾 **Rapor Boyutu:** 100+ kayıt/rapor
 
@@ -209,9 +209,9 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 📞 İletişim
 
-**Geliştirici:** Elle Shoes Development Team  
-**E-posta:** [tech@elleshoes.com]  
-**Proje Linki:** [GitHub Repository]
+**Geliştirici:** MetricNex Development Team  
+**E-posta:** [info@metricnex.com]  
+**Proje Linki:** [https://github.com/emrahub/-metricnex-ecommerce-dashboard]
 
 ---
 
