@@ -27,12 +27,46 @@ const ReportsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReports, setTotalReports] = useState(0);
   const reportsPerPage = 6; // Sayfa başına 6 rapor
+
+  const categories = [
+    { id: 'satis', name: 'Satış', icon: '💰', color: 'text-green-600 bg-green-50' },
+    { id: 'marka', name: 'Marka', icon: '🏷️', color: 'text-purple-600 bg-purple-50' },
+    { id: 'teknik', name: 'Teknik', icon: '⚙️', color: 'text-blue-600 bg-blue-50' },
+    { id: 'seo', name: 'SEO', icon: '🔍', color: 'text-orange-600 bg-orange-50' },
+    { id: 'genel', name: 'Genel', icon: '📊', color: 'text-indigo-600 bg-indigo-50' },
+    { id: 'global', name: 'Global', icon: '🌍', color: 'text-emerald-600 bg-emerald-50' }
+  ];
+
+  // Rapor kategorisi otomatik atama fonksiyonu
+  const assignCategory = (report: any) => {
+    const title = report.title.toLowerCase();
+    const fileName = (report.fileName || '').toLowerCase();
+    const content = `${title} ${fileName}`;
+
+    if (content.includes('satış') || content.includes('sales') || content.includes('gelir') || content.includes('revenue')) {
+      return 'satis';
+    }
+    if (content.includes('marka') || content.includes('brand') || content.includes('logo') || content.includes('kampanya')) {
+      return 'marka';
+    }
+    if (content.includes('teknik') || content.includes('technical') || content.includes('api') || content.includes('sistem')) {
+      return 'teknik';
+    }
+    if (content.includes('seo') || content.includes('arama') || content.includes('search') || content.includes('google')) {
+      return 'seo';
+    }
+    if (content.includes('global') || content.includes('dünya') || content.includes('world') || content.includes('international')) {
+      return 'global';
+    }
+    return 'genel'; // Varsayılan kategori
+  };
 
   useEffect(() => {
     const loadReports = async () => {
@@ -41,8 +75,14 @@ const ReportsList: React.FC = () => {
         const response = await axios.get('/api/analytics/google-analytics/reports/saved');
         
         if (response.data.success) {
-          setReports(response.data.data);
-          setTotalReports(response.data.total || response.data.data.length);
+          // Raporlara kategori ata
+          const reportsWithCategories = response.data.data.map((report: any) => ({
+            ...report,
+            category: assignCategory(report)
+          }));
+          
+          setReports(reportsWithCategories);
+          setTotalReports(response.data.total || reportsWithCategories.length);
         } else {
           setError('Raporlar yüklenemedi');
         }
@@ -89,9 +129,16 @@ const ReportsList: React.FC = () => {
                          (report.fileName && report.fileName.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = selectedType === 'all' || report.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || report.status === selectedStatus;
+    const matchesCategory = selectedCategory === 'all' || report.category === selectedCategory;
     
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesType && matchesStatus && matchesCategory;
   });
+
+  // Kategori bazlı raporları grupla
+  const reportsByCategory = categories.reduce((acc, category) => {
+    acc[category.id] = filteredReports.filter(report => report.category === category.id);
+    return acc;
+  }, {} as Record<string, any[]>);
 
   // Pagination calculations
   const totalPages = Math.ceil(totalReports / reportsPerPage);
@@ -148,7 +195,7 @@ const ReportsList: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
           {/* Search */}
           <div className="relative col-span-2">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -164,6 +211,25 @@ const ReportsList: React.FC = () => {
               }}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
             />
+          </div>
+
+          {/* Category filter */}
+          <div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                handleFilterChange();
+              }}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            >
+              <option value="all">Tüm Kategoriler</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.icon} {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Format filter */}
@@ -193,6 +259,7 @@ const ReportsList: React.FC = () => {
                 setSearchTerm('');
                 setSelectedType('all');
                 setSelectedStatus('all');
+                setSelectedCategory('all');
                 handleFilterChange();
               }}
               className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -203,87 +270,185 @@ const ReportsList: React.FC = () => {
         </div>
       </div>
 
-      {/* Reports list */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">
-              {filteredReports.length} Rapor
-            </h3>
-            <div className="text-sm text-gray-500">
-              Toplam: {totalReports} rapor
-            </div>
-          </div>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {filteredReports.map((report) => (
-            <div key={report.id} className="p-6 hover:bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <ChartBarIcon className="h-5 w-5 text-blue-500" />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {report.title}
+      {/* Category-based Reports Display */}
+      {selectedCategory === 'all' ? (
+        // Kategoriye göre gruplar halinde göster
+        <div className="space-y-6">
+          {categories.map(category => {
+            const categoryReports = reportsByCategory[category.id] || [];
+            if (categoryReports.length === 0) return null;
+
+            return (
+              <div key={category.id} className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+                <div className={`px-6 py-4 border-b border-gray-200 ${category.color}`}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium flex items-center space-x-2">
+                      <span className="text-xl">{category.icon}</span>
+                      <span>{category.name}</span>
+                      <span className="text-sm font-normal">({categoryReports.length})</span>
                     </h3>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(report.status)}`}>
-                      {report.status === 'completed' ? 'Tamamlandı' : report.status}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
-                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      {report.fileName}
-                    </span>
-                    <span>{report.type}</span>
-                    <span>{report.formattedDate}</span>
-                    <span>{report.size}</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getFormatColor(report.format)}`}>
-                    {getFormatIcon(report.format)}
-                  </span>
-                  <div className="flex space-x-1">
                     <button 
-                      onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}
-                      className="p-2 text-gray-400 hover:text-blue-600"
-                      title="İndir"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className="text-sm text-current hover:underline"
                     >
-                      <ArrowDownTrayIcon className="h-4 w-4" />
+                      Tümünü Gör
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredReports.length === 0 && (
-            <div className="p-12 text-center">
-              <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-sm font-medium text-gray-900">
-                {searchTerm || selectedType !== 'all' 
-                  ? 'Arama kriterlerinize uygun rapor bulunamadı' 
-                  : 'Henüz kaydedilmiş rapor yok'}
-              </h3>
-              <p className="mt-2 text-sm text-gray-500">
-                {searchTerm || selectedType !== 'all'
-                  ? 'Arama kriterlerinizi değiştirmeyi deneyin.'
-                  : 'Google Analytics sayfasından yeni raporlar oluşturabilirsiniz.'}
-              </p>
-              {(!searchTerm && selectedType === 'all') && (
-                <div className="mt-6">
-                  <button
-                    onClick={() => navigate('/google-analytics')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
-                  >
-                    <ChartBarIcon className="mr-2 h-4 w-4" />
-                    Rapor Oluştur
-                  </button>
+                <div className="divide-y divide-gray-200">
+                  {categoryReports.slice(0, 3).map((report) => (
+                    <div key={report.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <ChartBarIcon className="h-5 w-5 text-blue-500" />
+                            <h4 className="text-lg font-medium text-gray-900">
+                              {report.title}
+                            </h4>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(report.status)}`}>
+                              {report.status === 'completed' ? 'Tamamlandı' : report.status}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                            <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                              {report.fileName}
+                            </span>
+                            <span>{report.type}</span>
+                            <span>{report.formattedDate}</span>
+                            <span>{report.size}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getFormatColor(report.format)}`}>
+                            {getFormatIcon(report.format)}
+                          </span>
+                          <div className="flex space-x-1">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`http://localhost:3000${report.downloadUrl}`, '_blank');
+                              }}
+                              className="p-2 text-gray-400 hover:text-blue-600"
+                              title="İndir"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      ) : (
+        // Seçili kategorideki tüm raporları göster
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center space-x-2">
+                <span className="text-xl">{categories.find(c => c.id === selectedCategory)?.icon}</span>
+                <span>{categories.find(c => c.id === selectedCategory)?.name}</span>
+                <span className="text-sm font-normal">({filteredReports.length})</span>
+              </h3>
+              <button 
+                onClick={() => setSelectedCategory('all')}
+                className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
+              >
+                Tüm Kategoriler
+              </button>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {filteredReports.map((report) => (
+              <div key={report.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <ChartBarIcon className="h-5 w-5 text-blue-500" />
+                      <h4 className="text-lg font-medium text-gray-900">
+                        {report.title}
+                      </h4>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(report.status)}`}>
+                        {report.status === 'completed' ? 'Tamamlandı' : report.status}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                        {report.fileName}
+                      </span>
+                      <span>{report.type}</span>
+                      <span>{report.formattedDate}</span>
+                      <span>{report.size}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getFormatColor(report.format)}`}>
+                      {getFormatIcon(report.format)}
+                    </span>
+                    <div className="flex space-x-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`http://localhost:3000${report.downloadUrl}`, '_blank');
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-600"
+                        title="İndir"
+                      >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {filteredReports.length === 0 && (
+              <div className="p-12 text-center">
+                <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-4 text-sm font-medium text-gray-900">
+                  Bu kategoride rapor bulunamadı
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Henüz bu kategoriye ait kayıtlı rapor bulunmuyor.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state when no reports at all */}
+      {filteredReports.length === 0 && selectedCategory === 'all' && (
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-12 text-center">
+            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-4 text-sm font-medium text-gray-900">
+              {searchTerm || selectedType !== 'all' 
+                ? 'Arama kriterlerinize uygun rapor bulunamadı' 
+                : 'Henüz kaydedilmiş rapor yok'}
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              {searchTerm || selectedType !== 'all'
+                ? 'Arama kriterlerinizi değiştirmeyi deneyin.'
+                : 'Google Analytics sayfasından yeni raporlar oluşturabilirsiniz.'}
+            </p>
+            {(!searchTerm && selectedType === 'all') && (
+              <div className="mt-6">
+                <button
+                  onClick={() => navigate('/google-analytics')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                >
+                  <ChartBarIcon className="mr-2 h-4 w-4" />
+                  Rapor Oluştur
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
