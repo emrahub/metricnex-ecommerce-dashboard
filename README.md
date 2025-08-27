@@ -211,7 +211,7 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 **Geliştirici:** MetricNex Development Team  
 **E-posta:** [info@metricnex.com]  
-**Proje Linki:** [https://github.com/emrahub/-metricnex-ecommerce-dashboard]
+**Proje Linki:** [https://github.com/emrahub/metricnex-ecommerce-dashboard]
 
 ---
 
