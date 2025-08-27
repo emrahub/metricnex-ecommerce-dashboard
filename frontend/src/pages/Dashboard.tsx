@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '../services/dashboardService';
 import { reportService } from '../services/reportService';
@@ -7,10 +7,11 @@ import {
   DocumentTextIcon,
   UsersIcon,
   CurrencyDollarIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   ClockIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
+import type { Report } from '../types';
 
 const Dashboard: React.FC = () => {
   // Fetch dashboard metrics
@@ -33,6 +34,65 @@ const Dashboard: React.FC = () => {
   };
 
   const recentReports = reportsData?.data || [];
+
+  const renderRecentReports = () => {
+    if (reportsLoading) {
+      return (
+        [...Array(3)].map((_, i) => (
+          <div key={i} className="px-6 py-4 animate-pulse">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 flex-1">
+                <div className="h-6 w-6 bg-gray-300 rounded"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="h-6 w-16 bg-gray-300 rounded-full"></div>
+                <div className="h-3 w-20 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+          </div>
+        ))
+      );
+    }
+
+    if (recentReports.length > 0) {
+      return recentReports.map((report: Report) => {
+        const TypeIcon = getTypeIcon(report.type);
+        return (
+          <div key={report.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <TypeIcon className="h-6 w-6 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{report.title}</p>
+                  <p className="text-sm text-gray-500 capitalize">{report.type} Report</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(report.status)}`}>
+                  {report.status}
+                </span>
+                <span className="text-sm text-gray-500">{report.createdAt}</span>
+              </div>
+            </div>
+          </div>
+        );
+      });
+    }
+
+    return (
+      <div className="px-6 py-8 text-center">
+        <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-4 text-sm font-medium text-gray-900">No reports yet</h3>
+        <p className="mt-2 text-sm text-gray-500">
+          Get started by creating your first report.
+        </p>
+      </div>
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,7 +168,7 @@ const Dashboard: React.FC = () => {
           <div className="px-6 py-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <TrendingUpIcon className="h-8 w-8 text-success-600" />
+                <ArrowTrendingUpIcon className="h-8 w-8 text-success-600" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -204,58 +264,7 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
-        <div className="divide-y divide-gray-200">
-          {reportsLoading ? (
-            // Loading skeleton for reports
-            [...Array(3)].map((_, i) => (
-              <div key={i} className="px-6 py-4 animate-pulse">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className="h-6 w-6 bg-gray-300 rounded"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="h-6 w-16 bg-gray-300 rounded-full"></div>
-                    <div className="h-3 w-20 bg-gray-300 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : recentReports.length > 0 ? (
-            recentReports.map((report) => {
-            const TypeIcon = getTypeIcon(report.type);
-            return (
-              <div key={report.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <TypeIcon className="h-6 w-6 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{report.title}</p>
-                      <p className="text-sm text-gray-500 capitalize">{report.type} Report</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(report.status)}`}>
-                      {report.status}
-                    </span>
-                    <span className="text-sm text-gray-500">{report.createdAt}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="px-6 py-8 text-center">
-              <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-sm font-medium text-gray-900">No reports yet</h3>
-              <p className="mt-2 text-sm text-gray-500">
-                Get started by creating your first report.
-              </p>
-            </div>
-          )}
-        </div>
+        <div className="divide-y divide-gray-200">{renderRecentReports()}</div>
       </div>
     </div>
   );

@@ -37,4 +37,11 @@ api.interceptors.response.use(
 
 export default api;
 
-import { ApiResponse, LoginRequest, LoginResponse, Report, ReportCategory } from '../types';
+// Re-export common API types for convenience
+export type { 
+  ApiResponse, 
+  LoginRequest, 
+  LoginResponse, 
+  Report, 
+  ReportCategory 
+} from '../types';

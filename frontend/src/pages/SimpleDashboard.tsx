@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   ChartBarIcon,
   DocumentTextIcon,
-  UsersIcon,
-  CurrencyDollarIcon,
   ArrowTrendingUpIcon,
   ClockIcon,
   Cog6ToothIcon
@@ -30,10 +28,10 @@ const SimpleDashboard: React.FC = () => {
         ]);
 
         if (metricsResponse.success) {
-          setMetrics(metricsResponse.data);
+          setMetrics(metricsResponse.data || null);
         }
 
-        if (reportsResponse.success) {
+        if (reportsResponse.success && reportsResponse.data) {
           // Transform API data for dashboard display
           const transformedReports = reportsResponse.data.slice(0, 3).map(report => ({
             id: report.id,

@@ -1,10 +1,10 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from './pages/SimpleDashboard';
 import Login from './pages/ModernLogin';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import DataSourceDetail from './pages/DataSourceDetail';
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
 
@@ -35,7 +35,8 @@ function App() {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/reports/*" element={<Reports />} />
-                      <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/data-sources/:id" element={<DataSourceDetail />} />
                       <Route path="/google-analytics" element={<GoogleAnalytics />} />
                       <Route path="/google-ads" element={<GoogleAds />} />
                     </Routes>

@@ -50,3 +50,4 @@ tmp/
 ehthumbs.db
 Thumbs.db
 /src/generated/prisma
+google-credentials.json

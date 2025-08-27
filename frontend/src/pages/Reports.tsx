@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import {
   DocumentTextIcon,
-  PlusIcon,
-  FunnelIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
   EyeIcon,
@@ -11,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { reportService } from '../services/reportService';
 
 const Reports: React.FC = () => {
   return (
@@ -32,8 +31,9 @@ const ReportsList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalReports, setTotalReports] = useState(0);
-  const reportsPerPage = 6; // Sayfa başına 6 rapor
+  // Pagination states (currently unused)
+  // const [totalReports, setTotalReports] = useState(0);
+  // const reportsPerPage = 6; // Sayfa başına 6 rapor
 
   const categories = [
     { id: 'satis', name: 'Satış', icon: '💰', color: 'text-green-600 bg-green-50' },
@@ -82,7 +82,7 @@ const ReportsList: React.FC = () => {
           }));
           
           setReports(reportsWithCategories);
-          setTotalReports(response.data.total || reportsWithCategories.length);
+          // setTotalReports(response.data.total || reportsWithCategories.length);
         } else {
           setError('Raporlar yüklenemedi');
         }
@@ -141,9 +141,10 @@ const ReportsList: React.FC = () => {
   }, {} as Record<string, any[]>);
 
   // Pagination calculations
-  const totalPages = Math.ceil(totalReports / reportsPerPage);
-  const startIndex = (currentPage - 1) * reportsPerPage;
-  const endIndex = Math.min(startIndex + reportsPerPage, totalReports);
+  // Pagination calculations (reserved for future use)
+  // const totalPages = Math.ceil(totalReports / reportsPerPage);
+  // const startIndex = (currentPage - 1) * reportsPerPage;
+  // const endIndex = Math.min(startIndex + reportsPerPage, totalReports);
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => {

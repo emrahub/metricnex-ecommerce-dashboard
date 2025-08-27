@@ -39,12 +39,16 @@ import authRoutes from './routes/auth';
 import reportRoutes from './routes/reports';
 import analyticsRoutes from './routes/analytics';
 import googleAdsRoutes from './routes/googleAds';
+import dataSourcesRoutes from './routes/dataSources';
+import dashboardRoutes from './routes/dashboard';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/google-ads', googleAdsRoutes);
+app.use('/api/data-sources', dataSourcesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use('/api', (req, res) => {
   res.status(200).json({

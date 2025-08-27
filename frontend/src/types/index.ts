@@ -59,4 +59,6 @@ export interface GoogleAnalyticsReport {
   rowCount: number;
   metadata: any;
   kind: string;
+  // In our API we return a formatted payload with `data`
+  data?: any[];
 }

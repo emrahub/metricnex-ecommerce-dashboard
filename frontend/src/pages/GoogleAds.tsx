@@ -5,8 +5,8 @@ import { googleAdsService, GoogleAdsCampaign } from '../services/googleAdsServic
 const GoogleAds: React.FC = () => {
   const [customerId, setCustomerId] = useState('');
 
-  const mutation = useMutation<GoogleAdsCampaign[], Error, string>((id) => {
-    return googleAdsService.getCampaigns(id);
+  const mutation = useMutation<GoogleAdsCampaign[], Error, string>({
+    mutationFn: (id: string) => googleAdsService.getCampaigns(id),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

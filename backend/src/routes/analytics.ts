@@ -22,13 +22,54 @@ function formatGADate(dateString: string): string {
 
 const router = Router();
 
+function readGASettingsFromStore(): { propertyId?: string; hasCredentials: boolean } {
+  try {
+    const storePath = path.join(process.cwd(), 'uploads', 'data', 'data-sources.json');
+    if (!fs.existsSync(storePath)) return { hasCredentials: false };
+    const raw = fs.readFileSync(storePath, 'utf-8');
+    const items = JSON.parse(raw) as Array<{ type?: string; name?: string; config?: Record<string, any> }>;
+    const ga = items.find(i => i?.type === 'google_analytics' || /google\s*analytics/i.test(String(i?.name || '')));
+    const cfg = ga?.config || {};
+    const token = String(cfg.apiToken || cfg.credentialsBase64 || cfg.serviceAccountJson || '').trim();
+    const propertyId = String(cfg.propertyId || '').trim();
+    return { propertyId: propertyId || undefined, hasCredentials: Boolean(token) };
+  } catch {
+    return { hasCredentials: false };
+  }
+}
+
+function resolvePropertyId(preferred?: string): string | undefined {
+  if (preferred && String(preferred).trim()) return String(preferred).trim();
+  if (process.env.GOOGLE_ANALYTICS_PROPERTY_ID && process.env.GOOGLE_ANALYTICS_PROPERTY_ID.trim()) {
+    return process.env.GOOGLE_ANALYTICS_PROPERTY_ID.trim();
+  }
+  const fromStore = readGASettingsFromStore().propertyId;
+  return fromStore && fromStore.trim() ? fromStore.trim() : undefined;
+}
+
+function isGAConfigured(propertyIdFromReq?: string) {
+  const envCreds = Boolean(process.env.GOOGLE_CREDENTIALS_BASE64);
+  const store = readGASettingsFromStore();
+  const hasCreds = envCreds || store.hasCredentials;
+  const propertyId = resolvePropertyId(propertyIdFromReq);
+  return hasCreds && Boolean(propertyId);
+}
+
 // Google Analytics rapor endpoint'i
 router.post('/google-analytics/report', async (req: Request, res: Response) => {
   try {
     const { propertyId, startDate, endDate, metrics, dimensions } = req.body;
 
+    // Config validation
+    if (!isGAConfigured(propertyId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Analytics yapılandırılmamış: GOOGLE_CREDENTIALS_BASE64 ve Property ID gerekli'
+      });
+    }
+
     // Property ID'yi env'den al veya request'ten kullan
-    const finalPropertyId = propertyId || process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    const finalPropertyId = resolvePropertyId(propertyId);
     
     if (!finalPropertyId) {
       return res.status(400).json({ 
@@ -103,7 +144,10 @@ router.post('/google-analytics/report', async (req: Request, res: Response) => {
 // Hazır raporlar için endpoint'ler
 router.get('/google-analytics/reports/weekly-sessions', async (req: Request, res: Response) => {
   try {
-    const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    const propertyId = resolvePropertyId();
+    if (!isGAConfigured(propertyId)) {
+      return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
+    }
     
     if (!propertyId) {
       return res.status(400).json({ 
@@ -149,7 +193,10 @@ router.get('/google-analytics/reports/weekly-sessions', async (req: Request, res
 // Ülke bazlı trafik raporu
 router.get('/google-analytics/reports/country-traffic', async (req: Request, res: Response) => {
   try {
-    const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    const propertyId = resolvePropertyId();
+    if (!isGAConfigured(propertyId)) {
+      return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
+    }
     
     if (!propertyId) {
       return res.status(400).json({ 
@@ -194,7 +241,10 @@ router.get('/google-analytics/reports/country-traffic', async (req: Request, res
 // Cihaz kategorisi raporu
 router.get('/google-analytics/reports/device-category', async (req: Request, res: Response) => {
   try {
-    const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    const propertyId = resolvePropertyId();
+    if (!isGAConfigured(propertyId)) {
+      return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
+    }
     
     if (!propertyId) {
       return res.status(400).json({ 
@@ -237,7 +287,10 @@ router.get('/google-analytics/reports/device-category', async (req: Request, res
 // Trafik kaynakları raporu
 router.get('/google-analytics/reports/traffic-sources', async (req: Request, res: Response) => {
   try {
-    const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    const propertyId = resolvePropertyId();
+    if (!isGAConfigured(propertyId)) {
+      return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
+    }
     
     if (!propertyId) {
       return res.status(400).json({ 

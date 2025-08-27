@@ -5,7 +5,6 @@ import {
   CircleStackIcon,
   KeyIcon,
   ClockIcon,
-  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const Settings: React.FC = () => {
@@ -288,53 +287,8 @@ const NotificationSettings: React.FC = () => {
   );
 };
 
-const DataSourceSettings: React.FC = () => {
-  const dataSources = [
-    { id: 1, name: 'Shopify Store', type: 'shopify', status: 'connected', lastSync: '2 hours ago' },
-    { id: 2, name: 'Google Analytics', type: 'google_analytics', status: 'connected', lastSync: '1 hour ago' },
-    { id: 3, name: 'Facebook Ads', type: 'facebook_ads', status: 'disconnected', lastSync: 'Never' },
-    { id: 4, name: 'MySQL Database', type: 'database', status: 'connected', lastSync: '30 minutes ago' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">Data Sources</h3>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage connections to your data sources
-          </p>
-        </div>
-        <button className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700">
-          Add Data Source
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {dataSources.map((source) => (
-          <div key={source.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${source.status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">{source.name}</h4>
-                <p className="text-sm text-gray-600 capitalize">{source.type.replace('_', ' ')}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-900 capitalize">{source.status}</p>
-                <p className="text-sm text-gray-600">Last sync: {source.lastSync}</p>
-              </div>
-              <button className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                Configure
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+// Data Sources moved to modular feature components
+import DataSourceSettings from '../features/data-sources/DataSourceSettings';
 
 const SecuritySettings: React.FC = () => {
   return (

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/simple-app.ts",
+    "dev": "nodemon --watch src --exec ts-node src/simple-app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "jest"

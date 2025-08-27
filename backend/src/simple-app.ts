@@ -4,6 +4,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import analyticsRoutes from './routes/analytics';
+import dataSourceRoutes from './routes/dataSources';
+import googleAdsRoutes from './routes/googleAds';
+import authRoutes from './routes/auth';
+import reportRoutes from './routes/reports';
 
 dotenv.config();
 
@@ -16,6 +20,8 @@ app.use(express.json());
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// API routes (registered below after auth handling)
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -44,32 +50,51 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mock auth endpoint
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  if (email === 'admin@example.com' && password === 'password') {
-    res.json({
+// Auth routing: DB-backed or mock, depending on env
+if (process.env.USE_DB_AUTH === 'true') {
+  // Real auth routes require PostgreSQL/Redis configuration
+  app.use('/api/auth', authRoutes);
+} else {
+  // Mock auth endpoints for development/demo
+  app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body;
+    if (email === 'admin@example.com' && password === 'password') {
+      return res.json({
+        success: true,
+        data: {
+          token: 'mock-jwt-token',
+          user: {
+            id: '1',
+            email: 'admin@example.com',
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'admin'
+          },
+          expiresIn: 604800
+        }
+      });
+    }
+    return res.status(401).json({ success: false, error: 'Invalid credentials' });
+  });
+
+  app.post('/api/auth/logout', (_req, res) => {
+    return res.json({ success: true, message: 'Logged out (mock)' });
+  });
+
+  app.get('/api/auth/me', (_req, res) => {
+    return res.json({
       success: true,
       data: {
-        token: 'mock-jwt-token',
-        user: {
-          id: '1',
-          email: 'admin@example.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin'
-        },
-        expiresIn: 604800
+        id: '1',
+        email: 'admin@example.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'admin',
+        isActive: true
       }
     });
-  } else {
-    res.status(401).json({
-      success: false,
-      error: 'Invalid credentials'
-    });
-  }
-});
+  });
+}
 
 // Real reports endpoint - reads actual files from uploads/reports
 app.get('/api/reports', (req, res) => {
@@ -451,6 +476,9 @@ app.get('/api/reports/:id/download', (req, res) => {
 
 // Analytics API routes
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/data-sources', dataSourceRoutes);
+app.use('/api/google-ads', googleAdsRoutes);
+app.use('/api/reports', reportRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

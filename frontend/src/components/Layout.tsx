@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
@@ -6,7 +6,6 @@ import {
   Cog6ToothIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
-  ChartBarIcon,
   PresentationChartLineIcon,
   CursorArrowRippleIcon
 } from '@heroicons/react/24/outline';

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import type { LoginResponse } from '../types';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<LoginResponse['user'] | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 

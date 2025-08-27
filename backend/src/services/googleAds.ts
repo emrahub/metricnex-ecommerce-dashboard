@@ -1,7 +1,4 @@
 import { GoogleAdsApi } from 'google-ads-api';
-import path from 'path';
-
-const KEY_FILE_PATH = path.join(process.cwd(), 'google-credentials.json');
 
 class GoogleAdsService {
   private client: GoogleAdsApi;
