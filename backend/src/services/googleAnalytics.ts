@@ -24,10 +24,17 @@ class GoogleAnalyticsService {
         try {
           const storePath = path.join(process.cwd(), 'uploads', 'data', 'data-sources.json');
           if (fs.existsSync(storePath)) {
-            const raw = fs.readFileSync(storePath, 'utf-8');
-            const items = JSON.parse(raw) as Array<{ type?: string; name?: string; config?: Record<string, any> }>;
-            const ga = items.find(i => i?.type === 'google_analytics' || /google\s*analytics/i.test(String(i?.name || '')));
-            const cfg = ga?.config || {};
+          const raw = fs.readFileSync(storePath, 'utf-8');
+          const items = JSON.parse(raw) as Array<{ id?: string; type?: string; name?: string; status?: string; config?: Record<string, any> }>;
+          // Prefer a GA entry that actually has credentials (apiToken/credentialsBase64/serviceAccountJson)
+          const candidates = items.filter(i => i?.type === 'google_analytics' || /google\s*analytics/i.test(String(i?.name || '')));
+          const ga = candidates.find(i => {
+            const c = i?.config || {};
+            const token = String(c.apiToken || c.credentialsBase64 || c.serviceAccountJson || '').trim();
+            const prop = String(c.propertyId || '').trim();
+            return Boolean(token) && Boolean(prop);
+          }) || candidates[0];
+          const cfg = ga?.config || {};
             // Accept several possible keys from UI: apiToken (preferred), credentialsBase64, serviceAccountJson
             const token: string = String(cfg.apiToken || cfg.credentialsBase64 || cfg.serviceAccountJson || '').trim();
             if (token) {

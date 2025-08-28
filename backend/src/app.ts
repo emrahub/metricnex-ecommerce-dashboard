@@ -84,7 +84,7 @@ app.use('*', (req, res) => {
   });
 });
 
-if (require.main === module) {
+if (require.main === module || process.env.FORCE_LISTEN === 'true') {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);

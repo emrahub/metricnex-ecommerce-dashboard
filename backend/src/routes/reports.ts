@@ -1,4 +1,6 @@
 import { Router, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import Database from '../config/database';
 import RedisClient from '../config/redis';
@@ -7,6 +9,68 @@ import { generateReport } from '../services/reportGenerator';
 import { exportReport } from '../services/reportExporter';
 
 const router = Router();
+
+// Fallback: list reports from filesystem (used in demo mode or when DB is unavailable)
+function listReportsFromFilesystem(limit?: number) {
+  const reportsDir = path.join(process.cwd(), 'uploads', 'reports');
+  if (!fs.existsSync(reportsDir)) {
+    return { items: [], total: 0 };
+  }
+
+  const files = fs
+    .readdirSync(reportsDir)
+    .filter((file) => !fs.statSync(path.join(reportsDir, file)).isDirectory());
+
+  const total = files.length;
+  const slice = typeof limit === 'number' ? files.slice(0, Math.max(0, limit)) : files;
+
+  const items = slice.map((filename, index) => {
+    const filePath = path.join(reportsDir, filename);
+    const stats = fs.statSync(filePath);
+    const ext = path.extname(filename).toLowerCase();
+
+    let format = 'other';
+    let type = 'general';
+    let categoryColor = '#6B7280';
+    let categoryName = 'General Reports';
+
+    if (ext === '.pdf') {
+      format = 'pdf';
+      categoryName = 'PDF Reports';
+    } else if (ext === '.xlsx' || ext === '.xls') {
+      format = 'excel';
+      type = 'data';
+      categoryColor = '#F59E0B';
+      categoryName = 'Excel Reports';
+    } else if (ext === '.html' || ext === '.mhtml') {
+      format = 'html';
+      type = 'dashboard';
+      categoryColor = '#EF4444';
+      categoryName = 'HTML Reports';
+    }
+
+    let title = filename.replace(/\.[^/.]+$/, '');
+    if (title.length > 60) title = title.substring(0, 57) + '...';
+
+    return {
+      id: String(index + 1),
+      title,
+      description: `Report file: ${filename}`,
+      type,
+      format,
+      status: 'published',
+      category: {
+        name: categoryName,
+        color: categoryColor,
+      },
+      createdAt: stats.mtime.toISOString().split('T')[0],
+      createdBy: 'System',
+      fileSize: (stats.size / (1024 * 1024)).toFixed(1) + ' MB',
+    };
+  });
+
+  return { items, total };
+}
 
 // Get report categories - this needs to be before the /:id route
 router.get('/categories', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -21,9 +85,23 @@ router.get('/categories', authenticateToken, async (req: AuthenticatedRequest, r
 
   } catch (error) {
     console.error('Get categories error:', error);
+    // Demo fallback
+    if (process.env.DEMO_MODE === 'true' || process.env.DISABLE_AUTH === 'true') {
+      res.status(200).json({
+        success: true,
+        data: [
+          { id: '1', name: 'Sales Reports', slug: 'sales', color: '#10B981', icon: 'chart-line' },
+          { id: '2', name: 'Inventory Reports', slug: 'inventory', color: '#F59E0B', icon: 'cube' },
+          { id: '3', name: 'Customer Analytics', slug: 'customer', color: '#3B82F6', icon: 'user-group' },
+          { id: '4', name: 'Financial Reports', slug: 'financial', color: '#8B5CF6', icon: 'currency-dollar' },
+        ],
+      });
+      return;
+    }
+
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch categories'
+      error: 'Failed to fetch categories',
     });
   }
 });
@@ -117,9 +195,36 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 
   } catch (error) {
     console.error('Get reports error:', error);
+    // Fallback to filesystem-based listing in demo mode or when DB is down
+    try {
+      const isDemo = process.env.DEMO_MODE === 'true' || process.env.DISABLE_AUTH === 'true';
+      const limitParam = Number((req.query?.limit as string) || '0');
+      const { items, total } = listReportsFromFilesystem(isDemo ? (limitParam || undefined) : undefined);
+
+      if (items.length > 0 || isDemo) {
+        const limitVal = limitParam || items.length || 10;
+        const pageVal = Number((req.query?.page as string) || '1');
+        const totalPages = Math.ceil((total || 0) / (limitVal || 1));
+
+        res.status(200).json({
+          success: true,
+          data: items,
+          pagination: {
+            page: pageVal,
+            limit: limitVal,
+            total: total,
+            totalPages,
+          },
+        });
+        return;
+      }
+    } catch (fallbackErr) {
+      console.error('Filesystem fallback for reports failed:', fallbackErr);
+    }
+
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch reports'
+      error: 'Failed to fetch reports',
     });
   }
 });

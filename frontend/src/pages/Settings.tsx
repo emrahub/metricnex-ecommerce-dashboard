@@ -6,6 +6,8 @@ import {
   KeyIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
+import { qualityService } from '../services/quality';
+import { schedulingService } from '../services/scheduling';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -55,11 +57,7 @@ const Settings: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-700' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
                     <tab.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-400'}`} />
                     {tab.name}
@@ -195,14 +193,10 @@ const NotificationSettings: React.FC = () => {
           </div>
           <button
             onClick={() => setNotifications(prev => ({ ...prev, emailReports: !prev.emailReports }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              notifications.emailReports ? 'bg-primary-600' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.emailReports ? 'bg-primary-600' : 'bg-gray-200'}`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications.emailReports ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.emailReports ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
@@ -214,14 +208,10 @@ const NotificationSettings: React.FC = () => {
           </div>
           <button
             onClick={() => setNotifications(prev => ({ ...prev, reportComplete: !prev.reportComplete }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              notifications.reportComplete ? 'bg-primary-600' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.reportComplete ? 'bg-primary-600' : 'bg-gray-200'}`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications.reportComplete ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.reportComplete ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
@@ -233,14 +223,10 @@ const NotificationSettings: React.FC = () => {
           </div>
           <button
             onClick={() => setNotifications(prev => ({ ...prev, reportFailed: !prev.reportFailed }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              notifications.reportFailed ? 'bg-primary-600' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.reportFailed ? 'bg-primary-600' : 'bg-gray-200'}`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications.reportFailed ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.reportFailed ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
@@ -252,14 +238,10 @@ const NotificationSettings: React.FC = () => {
           </div>
           <button
             onClick={() => setNotifications(prev => ({ ...prev, weeklyDigest: !prev.weeklyDigest }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              notifications.weeklyDigest ? 'bg-primary-600' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.weeklyDigest ? 'bg-primary-600' : 'bg-gray-200'}`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications.weeklyDigest ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.weeklyDigest ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
@@ -271,14 +253,10 @@ const NotificationSettings: React.FC = () => {
           </div>
           <button
             onClick={() => setNotifications(prev => ({ ...prev, securityAlerts: !prev.securityAlerts }))}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              notifications.securityAlerts ? 'bg-primary-600' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.securityAlerts ? 'bg-primary-600' : 'bg-gray-200'}`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                notifications.securityAlerts ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.securityAlerts ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
@@ -368,7 +346,6 @@ const SecuritySettings: React.FC = () => {
 };
 
 const SchedulingSettings: React.FC = () => {
-  const { schedulingService } = require('../services/scheduling');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -477,7 +454,6 @@ const SchedulingSettings: React.FC = () => {
 
 // Quality overview panel
 const QualityPanel: React.FC = () => {
-  const { qualityService } = require('../services/quality');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { (async () => { try { const data = await qualityService.overview(); setItems(data); } finally { setLoading(false); } })(); }, []);

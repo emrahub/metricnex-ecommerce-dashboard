@@ -57,16 +57,16 @@ function ensureStore() {
 
     // Seed default content when nothing to migrate
     const seed: DataSource[] = [
-      { id: 'seed_shopify', name: 'Shopify Store', type: 'shopify', status: 'connected', lastSync: '2 hours ago', config: { shopDomain: '', accessToken: '' } },
-      { id: 'seed_ga', name: 'Google Analytics', type: 'google_analytics', status: 'connected', lastSync: '1 hour ago', config: { propertyId: '', apiToken: '' } },
+      { id: 'seed_shopify', name: 'Shopify Store', type: 'shopify', status: 'disconnected', lastSync: 'Never', config: { shopDomain: '', accessToken: '' } },
+      { id: 'seed_ga', name: 'Google Analytics', type: 'google_analytics', status: 'disconnected', lastSync: 'Never', config: { propertyId: '', apiToken: '' } },
       { id: 'seed_gads', name: 'Google Ads', type: 'google_ads', status: 'disconnected', lastSync: 'Never', config: { customerId: '', clientSecret: '' } },
       { id: 'seed_fb', name: 'Facebook Ads', type: 'facebook_ads', status: 'disconnected', lastSync: 'Never', config: { accountId: '', accessToken: '' } },
-      { id: 'seed_mysql', name: 'MySQL Database', type: 'database', status: 'connected', lastSync: '30 minutes ago', config: { host: '', port: '3306', database: '', user: '', password: '' } },
-      { id: 'seed_pg', name: 'PostgreSQL Database', type: 'postgresql', status: 'connected', lastSync: '30 minutes ago', config: { host: '', port: '5432', database: '', user: '', password: '', ssl: 'false' } },
+      { id: 'seed_mysql', name: 'MySQL Database', type: 'database', status: 'disconnected', lastSync: 'Never', config: { host: '', port: '3306', database: '', user: '', password: '' } },
+      { id: 'seed_pg', name: 'PostgreSQL Database', type: 'postgresql', status: 'disconnected', lastSync: 'Never', config: { host: '', port: '5432', database: '', user: '', password: '', ssl: 'false' } },
     ];
     fs.writeFileSync(preferredStoreFile, JSON.stringify(seed, null, 2));
   } else {
-    // Ensure important seed entries exist (e.g., new providers added later)
+    // Ensure important seed entries exist (e.g., new providers added later) and normalize bad statuses
     try {
       const raw = fs.readFileSync(preferredStoreFile, 'utf-8');
       const items = JSON.parse(raw) as DataSource[];
@@ -76,11 +76,25 @@ function ensureStore() {
           id: 'seed_pg',
           name: 'PostgreSQL Database',
           type: 'postgresql' as DataSourceType,
-          status: 'connected',
-          lastSync: '30 minutes ago',
+          status: 'disconnected',
+          lastSync: 'Never',
           config: { host: '', port: '5432', database: '', user: '', password: '', ssl: 'false' }
         } as any);
         changed = true;
+      }
+      // Normalize statuses for entries missing required config
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const cfg = it.config || {};
+        if (it.type === 'google_analytics') {
+          const hasToken = Boolean(String(cfg.apiToken || cfg.credentialsBase64 || cfg.serviceAccountJson || '').trim());
+          const hasProp = Boolean(String(cfg.propertyId || '').trim());
+          if (!(hasToken && hasProp) && it.status === 'connected') { items[i] = { ...it, status: 'disconnected' }; changed = true; }
+        }
+        if (it.type === 'database' || it.type === 'postgresql') {
+          const hasAll = ['host','port','database','user','password'].every(k => String(cfg[k] || '').trim());
+          if (!hasAll && it.status === 'connected') { items[i] = { ...it, status: 'disconnected' }; changed = true; }
+        }
       }
       // Merge legacy stores into current when preferred exists but user previously saved elsewhere
       for (const dir of legacyDirs) {
@@ -169,7 +183,7 @@ function maskSecrets<T extends Record<string, any>>(config: T): T {
 
 router.get('/', (req, res) => {
   try {
-    const items = readAll();
+    const items = readAll().filter(i => !/^seed_/i.test(i.id));
     // Mask secrets in list response
     const safe = items.map(i => ({ ...i, config: maskSecrets(i.config) }));
     res.json({ success: true, data: safe });

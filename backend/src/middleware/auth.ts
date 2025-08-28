@@ -17,6 +17,16 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // In demo/dev mode, bypass auth and attach a mock user
+    if (process.env.DEMO_MODE === 'true' || process.env.DISABLE_AUTH === 'true') {
+      req.user = {
+        id: 'demo-user',
+        email: 'demo@example.com',
+        role: 'admin',
+      };
+      return next();
+    }
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 

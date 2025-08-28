@@ -27,6 +27,11 @@ class Database {
 
     this.pool.on('error', (err: Error) => {
       console.error('💥 Unexpected error on idle client', err);
+      // In demo mode, do not crash the process. Allow route-level fallbacks.
+      if (process.env.DEMO_MODE === 'true') {
+        console.warn('⚠️ DEMO_MODE active: ignoring DB idle error (no exit)');
+        return;
+      }
       process.exit(-1);
     });
   }

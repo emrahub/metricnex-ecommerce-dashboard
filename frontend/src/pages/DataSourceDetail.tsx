@@ -15,7 +15,8 @@ const DataSourceDetail: React.FC = () => {
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const ds = await dataSourceService.get(id, { includeSecrets: true });
+      // For the detail (Open) view, do NOT fetch secrets; backend will mask sensitive fields
+      const ds = await dataSourceService.get(id);
       setItem(ds);
       setLoading(false);
     })();

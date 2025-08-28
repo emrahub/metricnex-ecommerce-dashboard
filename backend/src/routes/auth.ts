@@ -122,6 +122,35 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Demo/dev mode: allow mock login without DB
+    if (process.env.DEMO_MODE === 'true' || process.env.DISABLE_AUTH === 'true') {
+      if (email === 'admin@example.com' && password === 'password') {
+        const token = 'mock-jwt-token';
+        res.status(200).json({
+          success: true,
+          data: {
+            token,
+            user: {
+              id: 'demo-user',
+              email: 'admin@example.com',
+              firstName: 'Admin',
+              lastName: 'User',
+              role: 'admin'
+            },
+            // 7 days in seconds
+            expiresIn: 7 * 24 * 60 * 60
+          }
+        });
+        return;
+      } else {
+        res.status(401).json({
+          success: false,
+          error: 'Invalid credentials'
+        });
+        return;
+      }
+    }
+
     const db = Database.getInstance();
     const result = await db.query(
       'SELECT id, email, password_hash, first_name, last_name, role, is_active FROM users WHERE email = $1',
@@ -157,13 +186,15 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate JWT token
+    // Use provided JWT secret or a development fallback to prevent crashes
+    const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
     const token = jwt.sign(
       { 
         userId: user.id,
         email: user.email,
         role: user.role
       },
-      process.env.JWT_SECRET!,
+      jwtSecret,
       { expiresIn: '7d' }
     );
 

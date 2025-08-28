@@ -16,6 +16,28 @@ const DataSourceSettings: React.FC = () => {
       try {
         const list = await dataSourceService.list();
         setItems(list);
+
+        // Background: validate connections live and update statuses
+        try {
+          for (const ds of list) {
+            try {
+              const r = await dataSourceService.test(ds.id, { live: true });
+              const ok = r.status === 'success' && r.checks.every(c => c.ok);
+              const desired = ok ? 'connected' : 'disconnected';
+              if (ds.status !== desired) {
+                await dataSourceService.setStatus(ds.id, desired);
+              }
+            } catch {
+              // If test call failed, mark disconnected
+              try { await dataSourceService.setStatus(ds.id, 'disconnected'); } catch {}
+            }
+          }
+          // Reload list after updates
+          const updated = await dataSourceService.list();
+          setItems(updated);
+        } catch {
+          // ignore refresh errors
+        }
       } catch (e) {
         console.warn('Backend not reachable for data-sources list.', e);
       }
@@ -47,11 +69,28 @@ const DataSourceSettings: React.FC = () => {
   };
 
   const handleSave = async (payload: { id?: string; name: string; type: DataSourceType; config: Record<string, string> }) => {
+    // Save (create or update)
+    let saved: DataSource | null = null;
     if (payload.id) {
-      await dataSourceService.update(payload.id, { name: payload.name, config: payload.config });
+      saved = await dataSourceService.update(payload.id, { name: payload.name, config: payload.config });
     } else {
-      await dataSourceService.create({ name: payload.name, type: payload.type, config: payload.config });
+      saved = await dataSourceService.create({ name: payload.name, type: payload.type, config: payload.config });
     }
+
+    // After saving, run a live test and update status accordingly
+    try {
+      if (saved?.id) {
+        const result = await dataSourceService.test(saved.id, { live: true });
+        const ok = result.status === 'success' && result.checks.every(c => c.ok);
+        await dataSourceService.setStatus(saved.id, ok ? 'connected' : 'disconnected');
+      }
+    } catch (e) {
+      // If test fails, mark disconnected
+      if (saved?.id) {
+        await dataSourceService.setStatus(saved.id, 'disconnected');
+      }
+    }
+
     setModalOpen(false);
     setEditing(null);
     await refresh();

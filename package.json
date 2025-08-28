@@ -1,0 +1,8 @@
+{
+  "name": "ecommerce-dashboard-root",
+  "private": true,
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "setup": "bash scripts/setup.sh"
+  }
+}

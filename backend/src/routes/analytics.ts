@@ -22,13 +22,22 @@ function formatGADate(dateString: string): string {
 
 const router = Router();
 
+// Mock veriler kaldırıldı: her zaman gerçek GA verisi kullanılacak
+
 function readGASettingsFromStore(): { propertyId?: string; hasCredentials: boolean } {
   try {
     const storePath = path.join(process.cwd(), 'uploads', 'data', 'data-sources.json');
     if (!fs.existsSync(storePath)) return { hasCredentials: false };
     const raw = fs.readFileSync(storePath, 'utf-8');
-    const items = JSON.parse(raw) as Array<{ type?: string; name?: string; config?: Record<string, any> }>;
-    const ga = items.find(i => i?.type === 'google_analytics' || /google\s*analytics/i.test(String(i?.name || '')));
+    const items = JSON.parse(raw) as Array<{ id?: string; type?: string; name?: string; status?: string; config?: Record<string, any> }>;
+    const candidates = items.filter(i => i?.type === 'google_analytics' || /google\s*analytics/i.test(String(i?.name || '')));
+    // Prefer an entry that looks configured (has token + propertyId); fallback to first
+    const ga = candidates.find(i => {
+      const c = i?.config || {};
+      const token = String(c.apiToken || c.credentialsBase64 || c.serviceAccountJson || '').trim();
+      const prop = String(c.propertyId || '').trim();
+      return Boolean(token) && Boolean(prop);
+    }) || candidates[0];
     const cfg = ga?.config || {};
     const token = String(cfg.apiToken || cfg.credentialsBase64 || cfg.serviceAccountJson || '').trim();
     const propertyId = String(cfg.propertyId || '').trim();
@@ -59,6 +68,8 @@ function isGAConfigured(propertyIdFromReq?: string) {
 router.post('/google-analytics/report', async (req: Request, res: Response) => {
   try {
     const { propertyId, startDate, endDate, metrics, dimensions } = req.body;
+
+    // Mock kaldırıldı
 
     // Config validation
     if (!isGAConfigured(propertyId)) {
@@ -145,6 +156,7 @@ router.post('/google-analytics/report', async (req: Request, res: Response) => {
 router.get('/google-analytics/reports/weekly-sessions', async (req: Request, res: Response) => {
   try {
     const propertyId = resolvePropertyId();
+    // Mock kaldırıldı; yalnızca gerçek GA çağrısı
     if (!isGAConfigured(propertyId)) {
       return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
     }
@@ -194,6 +206,7 @@ router.get('/google-analytics/reports/weekly-sessions', async (req: Request, res
 router.get('/google-analytics/reports/country-traffic', async (req: Request, res: Response) => {
   try {
     const propertyId = resolvePropertyId();
+    // Mock kaldırıldı
     if (!isGAConfigured(propertyId)) {
       return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
     }
@@ -242,6 +255,7 @@ router.get('/google-analytics/reports/country-traffic', async (req: Request, res
 router.get('/google-analytics/reports/device-category', async (req: Request, res: Response) => {
   try {
     const propertyId = resolvePropertyId();
+    // Mock kaldırıldı
     if (!isGAConfigured(propertyId)) {
       return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
     }
@@ -288,6 +302,7 @@ router.get('/google-analytics/reports/device-category', async (req: Request, res
 router.get('/google-analytics/reports/traffic-sources', async (req: Request, res: Response) => {
   try {
     const propertyId = resolvePropertyId();
+    // Mock kaldırıldı
     if (!isGAConfigured(propertyId)) {
       return res.status(400).json({ success: false, message: 'Google Analytics yapılandırılmamış' });
     }

@@ -297,8 +297,8 @@ const ReportsList: React.FC = () => {
                   </div>
                 </div>
                 <div className="divide-y divide-gray-200">
-                  {categoryReports.slice(0, 3).map((report) => (
-                    <div key={report.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
+                  {categoryReports.slice(0, 3).map((report, index) => (
+                    <div key={`${report.id}-${index}`} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
@@ -363,8 +363,8 @@ const ReportsList: React.FC = () => {
             </div>
           </div>
           <div className="divide-y divide-gray-200">
-            {filteredReports.map((report) => (
-              <div key={report.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
+            {filteredReports.map((report, index) => (
+              <div key={`${report.id}-${index}`} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.open(`http://localhost:3000${report.downloadUrl}`, '_blank')}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
