@@ -5,6 +5,7 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import https from 'https';
 import net from 'net';
 import { Client as PGClient } from 'pg';
+import { google } from 'googleapis';
 // google-ads live test (requires full OAuth config)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -205,6 +206,88 @@ router.post('/:id/test', async (req, res) => {
     }
 
     switch (item.type) {
+      case 'google_search_console': {
+        const siteUrlOk = /^https?:\/\//.test(String(cfg.siteUrl || ''));
+        addCheck('Site URL format', siteUrlOk, siteUrlOk ? undefined : 'Full URL required');
+        const cidOk = Boolean((cfg.clientId || '').trim());
+        const csecOk = Boolean((cfg.clientSecret || '').trim());
+        const rtokOk = Boolean((cfg.refreshToken || '').trim());
+        addCheck('OAuth Client ID', cidOk);
+        addCheck('OAuth Client Secret', csecOk);
+        addCheck('Refresh Token', rtokOk);
+
+        const wantLive = String((req.query.live ?? req.body?.live) || 'false') === 'true';
+        if (wantLive && siteUrlOk && cidOk && csecOk && rtokOk) {
+          try {
+            const oauth2 = new google.auth.OAuth2(String(cfg.clientId), String(cfg.clientSecret));
+            oauth2.setCredentials({ refresh_token: String(cfg.refreshToken) });
+            const webmasters = google.webmasters({ version: 'v3', auth: oauth2 });
+            const sites = await webmasters.sites.list();
+            const found = (sites.data.siteEntry || []).some(se => se.siteUrl === String(cfg.siteUrl));
+            addCheck('Live API call', true, found ? 'Site accessible' : 'Site not found in account');
+          } catch (e: any) {
+            addCheck('Live API call', false, e?.message || 'Failed to query GSC');
+          }
+        }
+        break;
+      }
+      case 'google_merchant_center': {
+        const merchantOk = /^\d{3,}$/.test(String(cfg.merchantId || ''));
+        addCheck('Merchant ID', merchantOk, merchantOk ? undefined : 'Numeric Merchant ID');
+        const cidOk = Boolean((cfg.clientId || '').trim());
+        const csecOk = Boolean((cfg.clientSecret || '').trim());
+        const rtokOk = Boolean((cfg.refreshToken || '').trim());
+        addCheck('OAuth Client ID', cidOk);
+        addCheck('OAuth Client Secret', csecOk);
+        addCheck('Refresh Token', rtokOk);
+
+        const wantLive = String((req.query.live ?? req.body?.live) || 'false') === 'true';
+        if (wantLive && merchantOk && cidOk && csecOk && rtokOk) {
+          try {
+            const oauth2 = new google.auth.OAuth2(String(cfg.clientId), String(cfg.clientSecret));
+            oauth2.setCredentials({ refresh_token: String(cfg.refreshToken) });
+            const content = google.content({ version: 'v2.1', auth: oauth2 });
+            const resp = await content.accounts.get({ merchantId: String(cfg.merchantId), accountId: String(cfg.merchantId) });
+            const ok = Boolean(resp.data && resp.status === 200);
+            addCheck('Live API call', ok, ok ? 'Merchant accessible' : 'Cannot access merchant');
+          } catch (e: any) {
+            addCheck('Live API call', false, e?.message || 'Failed to query Merchant Center');
+          }
+        }
+        break;
+      }
+      case 'bigquery': {
+        const projectOk = Boolean((cfg.projectId || '').trim());
+        addCheck('Project ID', projectOk);
+        const raw = String(cfg.serviceAccount || '').trim();
+        const saPresent = Boolean(raw);
+        addCheck('Service Account present', saPresent, saPresent ? undefined : 'Paste JSON or Base64');
+        let creds: any | null = null;
+        if (saPresent) {
+          try {
+            if (raw.startsWith('{')) creds = JSON.parse(raw); else creds = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
+            addCheck('Service Account JSON', true);
+          } catch (e) {
+            addCheck('Service Account JSON', false, 'Invalid JSON/Base64');
+          }
+        }
+        const wantLive = String((req.query.live ?? req.body?.live) || 'false') === 'true';
+        if (wantLive && projectOk && creds) {
+          try {
+            const auth = new google.auth.GoogleAuth({
+              credentials: creds,
+              scopes: ['https://www.googleapis.com/auth/bigquery'],
+            });
+            const bigquery = google.bigquery({ version: 'v2', auth });
+            // simple datasets list
+            await bigquery.datasets.list({ projectId: String(cfg.projectId), maxResults: 1 });
+            addCheck('Live API call', true, 'BigQuery reachable');
+          } catch (e: any) {
+            addCheck('Live API call', false, e?.message || 'Failed to access BigQuery');
+          }
+        }
+        break;
+      }
       case 'google_analytics': {
         const propertyOk = /^\d{3,}$/.test(String(cfg.propertyId || ''));
         addCheck('Property ID format', propertyOk, propertyOk ? undefined : 'Numeric Property ID required');

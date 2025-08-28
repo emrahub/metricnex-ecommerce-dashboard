@@ -4,7 +4,10 @@ export type DataSourceType =
   | 'shopify'
   | 'facebook_ads'
   | 'database'
-  | 'postgresql';
+  | 'postgresql'
+  | 'google_search_console'
+  | 'google_merchant_center'
+  | 'bigquery';
 
 export type DataSourceStatus = 'connected' | 'disconnected' | 'unknown';
 

@@ -2,6 +2,35 @@ import { ProviderDefinition } from '../../types/dataSource';
 
 export const PROVIDERS: ProviderDefinition[] = [
   {
+    id: 'google_search_console',
+    name: 'Google Search Console',
+    fields: [
+      { key: 'siteUrl', label: 'Site URL', type: 'text', required: true, placeholder: 'https://www.example.com', helpText: 'Exact property URL as in GSC (sc-domain or URL-prefix). Must be verified.' },
+      { key: 'clientId', label: 'OAuth Client ID', type: 'text', required: true, placeholder: 'OAuth2 Client ID', helpText: 'Google Cloud Console → Credentials → OAuth 2.0 Client IDs' },
+      { key: 'clientSecret', label: 'OAuth Client Secret', type: 'password', required: true, placeholder: 'OAuth2 Client Secret', helpText: 'Google Cloud Console → Credentials → OAuth 2.0 Client IDs' },
+      { key: 'refreshToken', label: 'OAuth Refresh Token', type: 'password', required: true, placeholder: 'OAuth2 Refresh Token', helpText: 'Obtain via OAuth flow with scope https://www.googleapis.com/auth/webmasters.readonly and access_type=offline' },
+    ],
+  },
+  {
+    id: 'google_merchant_center',
+    name: 'Google Merchant Center',
+    fields: [
+      { key: 'merchantId', label: 'Merchant ID', type: 'text', required: true, placeholder: 'e.g. 123456789', helpText: 'Merchant Center account ID' },
+      { key: 'clientId', label: 'OAuth Client ID', type: 'text', required: true, placeholder: 'OAuth2 Client ID' },
+      { key: 'clientSecret', label: 'OAuth Client Secret', type: 'password', required: true, placeholder: 'OAuth2 Client Secret' },
+      { key: 'refreshToken', label: 'OAuth Refresh Token', type: 'password', required: true, placeholder: 'OAuth2 Refresh Token', helpText: 'Scopes: https://www.googleapis.com/auth/content' },
+    ],
+  },
+  {
+    id: 'bigquery',
+    name: 'BigQuery',
+    fields: [
+      { key: 'projectId', label: 'Project ID', type: 'text', required: true, placeholder: 'gcp-project-id' },
+      { key: 'datasetId', label: 'Dataset (optional)', type: 'text', required: false, placeholder: 'e.g. ecommerce' },
+      { key: 'serviceAccount', label: 'Service Account (JSON/Base64)', type: 'textarea', required: true, placeholder: '{ "type": "service_account", ... } or Base64', helpText: 'Paste full SA JSON or its Base64. Will be used to access BigQuery.' },
+    ],
+  },
+  {
     id: 'google_analytics',
     name: 'Google Analytics',
     fields: [
