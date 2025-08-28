@@ -37,7 +37,6 @@ const DataSourceModal: React.FC<Props> = ({ open, initial, onClose, onSave }) =>
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Name is required';
     if (!selectedProvider) e.provider = 'Provider is required';
     const def = provider;
     if (def) {
@@ -54,7 +53,8 @@ const DataSourceModal: React.FC<Props> = ({ open, initial, onClose, onSave }) =>
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave({ id: initial?.id, name: name.trim(), type: selectedProvider as DataSourceType, config });
+    const finalName = name.trim() || provider?.name || 'Data Source';
+    onSave({ id: initial?.id, name: finalName, type: selectedProvider as DataSourceType, config });
   };
 
   if (!open) return null;
