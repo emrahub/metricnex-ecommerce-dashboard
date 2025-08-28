@@ -13,8 +13,12 @@ const DataSourceSettings: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const list = await dataSourceService.list();
-      setItems(list);
+      try {
+        const list = await dataSourceService.list();
+        setItems(list);
+      } catch (e) {
+        console.warn('Backend not reachable for data-sources list.', e);
+      }
     })();
   }, []);
 
