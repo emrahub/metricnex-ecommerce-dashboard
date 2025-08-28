@@ -133,8 +133,20 @@ function ensureStore() {
 
 function readAll(): DataSource[] {
   ensureStore();
-  const raw = fs.readFileSync(preferredStoreFile, 'utf-8');
-  return JSON.parse(raw) as DataSource[];
+  try {
+    const raw = fs.readFileSync(preferredStoreFile, 'utf-8');
+    return JSON.parse(raw) as DataSource[];
+  } catch (e) {
+    // If JSON is corrupted, back it up and start fresh
+    try {
+      const corrupted = fs.readFileSync(preferredStoreFile);
+      const bak = preferredStoreFile.replace(/\.json$/, '') + `-${Date.now()}.bak.json`;
+      fs.writeFileSync(bak, corrupted);
+    } catch {
+      // ignore
+    }
+    return [];
+  }
 }
 
 function writeAll(items: DataSource[]) {
@@ -180,23 +192,27 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { name, type, config } = req.body || {};
-  if (!name || !type || typeof config !== 'object') {
-    return res.status(400).json({ success: false, error: 'name, type and config are required' });
+  try {
+    const { name, type, config } = req.body || {};
+    if (!name || !type || typeof config !== 'object') {
+      return res.status(400).json({ success: false, error: 'name, type and config are required' });
+    }
+    const items = readAll();
+    const ds: DataSource = {
+      id: 'ds_' + Date.now(),
+      name,
+      type,
+      status: 'unknown',
+      lastSync: 'Never',
+      config: config || {},
+    };
+    items.push(ds);
+    writeAll(items);
+    res.status(201).json({ success: true, data: ds });
+  } catch (e: any) {
+    console.error('Failed to create data source:', e);
+    res.status(500).json({ success: false, error: 'Failed to create data source', message: e?.message });
   }
-  const items = readAll();
-  const now = new Date();
-  const ds: DataSource = {
-    id: 'ds_' + Date.now(),
-    name,
-    type,
-    status: 'unknown',
-    lastSync: 'Never',
-    config: config || {},
-  };
-  items.push(ds);
-  writeAll(items);
-  res.status(201).json({ success: true, data: ds });
 });
 
 router.put('/:id', (req, res) => {
