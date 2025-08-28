@@ -82,6 +82,48 @@ function ensureStore() {
         } as any);
         changed = true;
       }
+      // Merge legacy stores into current when preferred exists but user previously saved elsewhere
+      for (const dir of legacyDirs) {
+        const legacyFile = path.join(dir, 'data-sources.json');
+        if (fs.existsSync(legacyFile)) {
+          try {
+            const lraw = fs.readFileSync(legacyFile, 'utf-8');
+            const litems = JSON.parse(lraw) as DataSource[];
+            for (const li of litems) {
+              const byId = items.findIndex(i => i.id === li.id);
+              if (byId !== -1) {
+                // Merge configs favoring non-empty values
+                items[byId] = {
+                  ...items[byId],
+                  name: li.name || items[byId].name,
+                  type: (li.type as DataSourceType) || items[byId].type,
+                  status: li.status || items[byId].status,
+                  config: { ...(items[byId].config || {}), ...(li.config || {}) },
+                  lastSync: li.lastSync || items[byId].lastSync,
+                } as DataSource;
+                changed = true;
+              } else {
+                // If same type+name exists, merge; else append
+                const byTypeName = items.findIndex(i => i.type === li.type && i.name === li.name);
+                if (byTypeName !== -1) {
+                  items[byTypeName] = {
+                    ...items[byTypeName],
+                    config: { ...(items[byTypeName].config || {}), ...(li.config || {}) },
+                    status: li.status || items[byTypeName].status,
+                    lastSync: li.lastSync || items[byTypeName].lastSync,
+                  } as DataSource;
+                  changed = true;
+                } else {
+                  items.push(li);
+                  changed = true;
+                }
+              }
+            }
+          } catch {
+            // ignore bad legacy file
+          }
+        }
+      }
       if (changed) fs.writeFileSync(preferredStoreFile, JSON.stringify(items, null, 2));
     } catch {
       // ignore
