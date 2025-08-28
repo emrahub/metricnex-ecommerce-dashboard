@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   UserIcon,
   BellIcon,
@@ -359,37 +359,148 @@ const SecuritySettings: React.FC = () => {
           </div>
         </div>
       </div>
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Data Quality Overview</h4>
+        <QualityPanel />
+      </div>
     </div>
   );
 };
 
 const SchedulingSettings: React.FC = () => {
+  const { schedulingService } = require('../services/scheduling');
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', cron: '0 8 * * *', isActive: true, taskType: 'ga_weekly_sessions', slackWebhookUrl: '' });
+  const [saving, setSaving] = useState(false);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const list = await schedulingService.list();
+      setItems(list);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  const createSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await schedulingService.create({
+        name: form.name || 'Scheduled Report',
+        cron: form.cron,
+        isActive: form.isActive,
+        task: { type: form.taskType, config: {} },
+        notify: form.slackWebhookUrl ? { slackWebhookUrl: form.slackWebhookUrl } : undefined,
+      });
+      setOpen(false);
+      setForm({ name: '', cron: '0 8 * * *', isActive: true, taskType: 'ga_weekly_sessions', slackWebhookUrl: '' });
+      await refresh();
+    } finally { setSaving(false); }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900">Report Scheduling</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Configure automatic report generation
-        </p>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex">
-          <ClockIcon className="h-5 w-5 text-blue-600 mt-0.5" />
-          <div className="ml-3">
-            <h4 className="text-sm font-medium text-blue-800">Scheduled Reports</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              Set up automatic report generation on a recurring schedule. Reports will be generated and delivered according to your preferences.
-            </p>
-          </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">Report Scheduling</h3>
+          <p className="mt-1 text-sm text-gray-600">Configure automatic report generation</p>
         </div>
+        <button onClick={() => setOpen(true)} className="px-3 py-2 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700">Add Schedule</button>
       </div>
 
-      <button className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors">
-        <ClockIcon className="mx-auto h-8 w-8 mb-2" />
-        <p className="text-sm font-medium">No scheduled reports yet</p>
-        <p className="text-sm">Click to create your first scheduled report</p>
-      </button>
+      {loading ? (
+        <div className="p-4 text-sm text-gray-600">Loading schedules…</div>
+      ) : items.length === 0 ? (
+        <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-600">
+          <ClockIcon className="mx-auto h-8 w-8 mb-2" />
+          <p className="text-sm font-medium">No scheduled reports yet</p>
+          <p className="text-sm">Click “Add Schedule” to create your first scheduled report</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((it) => (
+            <div key={it.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{it.name}</p>
+                <p className="text-sm text-gray-600">cron: <span className="font-mono">{it.cron}</span> • task: {it.task?.type} • {it.isActive ? 'active' : 'paused'}</p>
+                {it.lastRunAt && <p className="text-xs text-gray-500">Last run: {new Date(it.lastRunAt).toLocaleString()}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={async () => { await schedulingService.testRun(it.id); }} className="px-3 py-1 rounded-lg border border-gray-300 text-sm">Test run</button>
+                <button onClick={async () => { if (confirm('Delete schedule?')) { await schedulingService.remove(it.id); await refresh(); } }} className="px-3 py-1 rounded-lg border border-red-300 text-sm text-red-700">Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <form onSubmit={createSchedule} className="w-full max-w-lg bg-white rounded-lg shadow-xl p-6 space-y-4">
+            <h4 className="text-lg font-medium text-gray-900">Add Schedule</h4>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1 block w-full rounded-lg border-gray-300" placeholder="Weekly GA sessions" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Cron</label>
+              <input value={form.cron} onChange={(e) => setForm({ ...form, cron: e.target.value })} className="mt-1 block w-full rounded-lg border-gray-300 font-mono" placeholder="0 8 * * *" />
+              <p className="text-xs text-gray-500 mt-1">Use cron format. Example: 0 8 * * * (every day at 08:00)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Task</label>
+              <select value={form.taskType} onChange={(e) => setForm({ ...form, taskType: e.target.value })} className="mt-1 block w-full rounded-lg border-gray-300">
+                <option value="ga_weekly_sessions">GA: Weekly Sessions Report</option>
+                <option value="custom">Custom (placeholder)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Slack Webhook (optional)</label>
+              <input value={form.slackWebhookUrl} onChange={(e) => setForm({ ...form, slackWebhookUrl: e.target.value })} className="mt-1 block w-full rounded-lg border-gray-300" placeholder="https://hooks.slack.com/services/..." />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm">Cancel</button>
+              <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm">{saving ? 'Saving…' : 'Save'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Quality overview panel
+const QualityPanel: React.FC = () => {
+  const { qualityService } = require('../services/quality');
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { (async () => { try { const data = await qualityService.overview(); setItems(data); } finally { setLoading(false); } })(); }, []);
+  if (loading) return <div className="p-4 text-sm text-gray-600">Loading quality overview…</div>;
+  if (!items.length) return <div className="p-4 text-sm text-gray-600">No data sources yet</div>;
+  return (
+    <div className="space-y-3">
+      {items.map((it) => {
+        const color = it.status === 'ok' ? 'text-green-700' : it.status === 'warn' ? 'text-yellow-700' : 'text-red-700';
+        return (
+          <div key={it.id} className="p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-900">{it.name} <span className="text-gray-500">• {it.type.replace(/_/g, ' ')}</span></p>
+              <span className={`text-sm font-medium ${color}`}>{it.status.toUpperCase()}</span>
+            </div>
+            <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+              {it.checks.map((c: any, idx: number) => (
+                <li key={idx} className={`text-sm ${c.ok ? 'text-green-700' : 'text-red-700'}`}>• {c.name}{!c.ok && c.message ? ` — ${c.message}` : ''}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 };
