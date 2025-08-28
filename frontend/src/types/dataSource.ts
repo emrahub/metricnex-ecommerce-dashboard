@@ -3,7 +3,8 @@ export type DataSourceType =
   | 'google_ads'
   | 'shopify'
   | 'facebook_ads'
-  | 'database';
+  | 'database'
+  | 'postgresql';
 
 export type DataSourceStatus = 'connected' | 'disconnected' | 'unknown';
 

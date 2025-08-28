@@ -4,6 +4,7 @@ import path from 'path';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import https from 'https';
 import net from 'net';
+import { Client as PGClient } from 'pg';
 // google-ads live test (requires full OAuth config)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -370,6 +371,41 @@ router.post('/:id/test', async (req, res) => {
               resolve();
             });
           });
+        }
+        break;
+      }
+      case 'postgresql': {
+        const hostOk = Boolean((cfg.host || '').trim());
+        const portOk = !isNaN(Number(cfg.port || '5432'));
+        const dbOk = Boolean((cfg.database || '').trim());
+        const userOk = Boolean((cfg.user || '').trim());
+        const passOk = Boolean((cfg.password || '').trim());
+        addCheck('Host present', hostOk);
+        addCheck('Port numeric', portOk);
+        addCheck('Database present', dbOk);
+        addCheck('User present', userOk);
+        addCheck('Password present', passOk);
+
+        const wantLive = String((req.query.live ?? req.body?.live) || 'false') === 'true';
+        if (wantLive && hostOk && portOk && dbOk && userOk && passOk) {
+          const client = new PGClient({
+            host: String(cfg.host),
+            port: Number(cfg.port || 5432),
+            database: String(cfg.database),
+            user: String(cfg.user),
+            password: String(cfg.password),
+            ssl: String(cfg.ssl || '').toLowerCase() === 'true' ? { rejectUnauthorized: false } : undefined,
+          });
+          try {
+            await client.connect();
+            const res = await client.query('SELECT 1');
+            const ok = Boolean(res && res.rowCount !== undefined);
+            addCheck('Live query', ok, ok ? 'SELECT 1 succeeded' : 'Query failed');
+          } catch (e: any) {
+            addCheck('Live query', false, e?.message || 'Failed to connect/query PostgreSQL');
+          } finally {
+            try { await client.end(); } catch {}
+          }
         }
         break;
       }

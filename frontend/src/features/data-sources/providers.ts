@@ -48,6 +48,18 @@ export const PROVIDERS: ProviderDefinition[] = [
       { key: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••', helpText: 'User password' },
     ],
   },
+  {
+    id: 'postgresql',
+    name: 'PostgreSQL',
+    fields: [
+      { key: 'host', label: 'Host', type: 'text', required: true, placeholder: '127.0.0.1', helpText: 'Database hostname or IP' },
+      { key: 'port', label: 'Port', type: 'number', required: true, placeholder: '5432', helpText: 'Default PostgreSQL port 5432' },
+      { key: 'database', label: 'Database', type: 'text', required: true, placeholder: 'e.g. postgres', helpText: 'Database name' },
+      { key: 'user', label: 'User', type: 'text', required: true, placeholder: 'db_user', helpText: 'User with read permissions' },
+      { key: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••', helpText: 'User password' },
+      { key: 'ssl', label: 'SSL (true/false)', type: 'text', required: false, placeholder: 'false', helpText: 'Set true if your server requires SSL' },
+    ],
+  },
 ];
 
 export const providerById = (id: string) => PROVIDERS.find(p => p.id === id);
