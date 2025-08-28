@@ -61,8 +61,30 @@ function ensureStore() {
       { id: 'seed_gads', name: 'Google Ads', type: 'google_ads', status: 'disconnected', lastSync: 'Never', config: { customerId: '', clientSecret: '' } },
       { id: 'seed_fb', name: 'Facebook Ads', type: 'facebook_ads', status: 'disconnected', lastSync: 'Never', config: { accountId: '', accessToken: '' } },
       { id: 'seed_mysql', name: 'MySQL Database', type: 'database', status: 'connected', lastSync: '30 minutes ago', config: { host: '', port: '3306', database: '', user: '', password: '' } },
+      { id: 'seed_pg', name: 'PostgreSQL Database', type: 'postgresql', status: 'connected', lastSync: '30 minutes ago', config: { host: '', port: '5432', database: '', user: '', password: '', ssl: 'false' } },
     ];
     fs.writeFileSync(preferredStoreFile, JSON.stringify(seed, null, 2));
+  } else {
+    // Ensure important seed entries exist (e.g., new providers added later)
+    try {
+      const raw = fs.readFileSync(preferredStoreFile, 'utf-8');
+      const items = JSON.parse(raw) as DataSource[];
+      let changed = false;
+      if (!items.some(i => i.type === 'postgresql')) {
+        items.push({
+          id: 'seed_pg',
+          name: 'PostgreSQL Database',
+          type: 'postgresql' as DataSourceType,
+          status: 'connected',
+          lastSync: '30 minutes ago',
+          config: { host: '', port: '5432', database: '', user: '', password: '', ssl: 'false' }
+        } as any);
+        changed = true;
+      }
+      if (changed) fs.writeFileSync(preferredStoreFile, JSON.stringify(items, null, 2));
+    } catch {
+      // ignore
+    }
   }
 }
 
