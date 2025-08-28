@@ -41,6 +41,8 @@ import analyticsRoutes from './routes/analytics';
 import googleAdsRoutes from './routes/googleAds';
 import dataSourcesRoutes from './routes/dataSources';
 import dashboardRoutes from './routes/dashboard';
+import schedulingRoutes from './routes/scheduling';
+import qualityRoutes from './routes/quality';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +51,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/google-ads', googleAdsRoutes);
 app.use('/api/data-sources', dataSourcesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/scheduling', schedulingRoutes);
+app.use('/api/quality', qualityRoutes);
 
 app.use('/api', (req, res) => {
   res.status(200).json({

@@ -8,6 +8,7 @@ import dataSourceRoutes from './routes/dataSources';
 import googleAdsRoutes from './routes/googleAds';
 import authRoutes from './routes/auth';
 import reportRoutes from './routes/reports';
+import schedulingRoutes from './routes/scheduling';
 
 dotenv.config();
 
@@ -479,6 +480,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/data-sources', dataSourceRoutes);
 app.use('/api/google-ads', googleAdsRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/scheduling', schedulingRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
